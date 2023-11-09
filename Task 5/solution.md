@@ -1,0 +1,3 @@
+When It comes to datacenter DR, We should always have a secondary DB in another region where it should be always On and synched to Primary DB in the Tokyo Region. When it comes to earthquake we need to spin up the infrastructure within minimum down time, To achieve this we can use autoscalling feature for spinning up the infrastructre in another region within minimum RTO. If the data sync between Tokyo and Singapore is more frequent we can achive minimum RPO aswell, But it depends on the data load.
+Methods: Increase ASG Node amount from 0 to required amount (equal to tokyo cluster)
+         Change the DNS record of Tokyo Load balancer to Singapore Load balancer.

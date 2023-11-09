@@ -1,0 +1,44 @@
+name: CI/CD
+on:
+   push:
+    branches: [main]
+jobs:
+   build-and-deploy:
+       runs-on: ubuntu-latest
+       steps:
+           - uses: actions/checkout@v4
+           - name: Use Node.js
+             uses: actions/setup-node@v3
+             with:
+               node-version: '20.x'
+           - run: npm ci
+           - run: npm run build --if-present
+
+           - name: Docker Login
+             env:
+               DOCKER_USER: ${{secrets.DOCKER_USER}}
+               DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+             run:
+               docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+           - name: Docker Push
+             env:
+               REPO: backend-repo
+             run: |
+               docker build -t $REPO .
+               docker tag $REPO:latest ${{secrets.DOCKER_USER}}/$REPO:latest
+               docker push ${{secrets.DOCKER_USER}}/$REPO
+
+           - name: Docker Pull and Run from HUB
+             uses: appleboy/ssh-action@master
+             with:
+               host: ec2-18-221-186-171.us-east-2.compute.amazonaws.com
+               username: ubuntu
+               key : ${{secrets.ACTION_PRIVATE_KEY}}
+               command_timeout: 200m
+               envs: GITHUB_SHA
+               script: |
+                docker pull ${{secrets.DOCKER_USER}}/$REPO
+                 docker stop backend_server
+                 docker rm backend_server
+                 docker run --detach --name backend_server -p 3001:3000 inshaflafi/backend-repo
+                 
